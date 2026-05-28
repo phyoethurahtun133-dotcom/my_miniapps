@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Quiz Player</title>
+    <!-- Tailwind CSS & Markdown Engine -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .is-flipped { transform: rotateY(180deg); }
+
+        .card-scrollbar::-webkit-scrollbar { width: 6px; }
+        .card-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .card-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
+
+        body.dark-mode { background-color: #0f172a; color: #e2e8f0; }
+        body.dark-mode .bg-white { background-color: #1e293b; color: #f1f5f9; border-color: #334155; }
+        body.dark-mode .bg-gray-50 { background-color: #0f172a; border-color: #334155; }
+        body.dark-mode p, body.dark-mode h2, body.dark-mode h3 { color: #f1f5f9; }
+        body.dark-mode .text-gray-900, body.dark-mode .text-gray-800, body.dark-mode .text-gray-500 { color: #cbd5e1; }
+
+        /* High-contrast fixes for status boxes and celebration dashboard in dark mode */
+        body.dark-mode .bg-emerald-50 { background-color: #022c22 !important; border-color: #065f46 !important; }
+        body.dark-mode .bg-emerald-50 p { color: #a7f3d0 !important; }
+        body.dark-mode .bg-rose-50 { background-color: #4c0519 !important; border-color: #9f1239 !important; }
+        body.dark-mode .bg-rose-50 p { color: #fecdd3 !important; }
+
+        body.dark-mode .bg-indigo-50 { background-color: #1e1b4b !important; border-color: #312e81 !important; }
+        body.dark-mode .bg-indigo-50 p { color: #c7d2fe !important; }
+        body.dark-mode #final-score-value { color: #ffffff !important; }
+        body.dark-mode #celebration-screen h2 { color: #ffffff !important; }
+        body.dark-mode #celebration-screen p { color: #cbd5e1 !important; }
+
+        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
+        .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
+        .markdown-body code { background: rgba(156, 163, 175, 0.2); padding: 0.12rem 0.3rem; border-radius: 4px; font-family: monospace; font-size: 85%; }
+        body.dark-mode .markdown-body code { background: rgba(255, 255, 255, 0.15); color: #f472b6; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800 font-sans transition-colors duration-200">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-indigo-600 text-white shadow-md p-4 mb-8">
+        <div class="max-w-3xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">🎓 Flashcard Quiz Player</h1>
+            <div class="flex items-center gap-3">
+                <button id="theme-toggle" class="bg-indigo-700 hover:bg-indigo-800 p-2 rounded-xl text-xs font-bold px-3">🌙 Dark Mode</button>
+                <label for="import-deck-file" class="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold text-xs px-4 py-2 rounded-xl border border-indigo-400 transition cursor-pointer shadow-sm">📂 Load Deck</label>
+                <input type="file" id="import-deck-file" accept=".json" class="hidden">
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 pb-12">
+        <div id="quiz-area" class="space-y-6">
+            
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-2">
+                <div class="flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    <span>Card Progress: <span id="progress-text">0/0</span></span>
+                    <span>Success Rate: <span id="score-percent">0%</span></span>
+                </div>
+                <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="w-0 h-full bg-indigo-600 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- 3D Interactive Flashcard Element -->
+            <div class="perspective-1000 w-full h-96 group">
+                <div id="flashcard" class="w-full h-full relative transform-style-3d transition-transform duration-500 cursor-pointer select-none rounded-2xl shadow-md border border-gray-200/60">
+                    
+                    <!-- FRONT SIDE -->
+                    <div class="absolute inset-0 backface-hidden bg-white rounded-2xl p-6 flex flex-col justify-between items-start text-left">
+                        <div class="w-full flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-md">Front (Question)</span>
+                            <button id="tts-front" class="bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-gray-200 text-xs font-bold px-2.5 py-1 rounded-lg transition">🔊 Speak</button>
+                        </div>
+                        <!-- Vertically and horizontally centered content sandbox box -->
+                        <div class="flex-1 w-full flex flex-col justify-center items-center gap-3 overflow-hidden my-1">
+                            <img id="view-front-img" src="" class="hidden max-h-32 object-contain rounded-lg max-w-full" alt="Front Illustration">
+                            <div id="view-front-text" class="card-scrollbar markdown-body w-full text-base sm:text-lg font-semibold text-gray-800 text-left overflow-y-auto pr-2 max-h-full"></div>
+                        </div>
+                        <span class="text-xs text-gray-400 italic self-center mt-2">💡 Click anywhere on the card to flip</span>
+                    </div>
+
+                    <!-- BACK SIDE -->
+                    <div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-900 rounded-2xl p-6 flex flex-col justify-between items-start text-left text-white">
+                        <div class="w-full flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold uppercase tracking-widest text-indigo-300 bg-indigo-950/50 px-2.5 py-1 rounded-md">Back (Answer)</span>
+                            <button id="tts-back" class="bg-indigo-950/50 hover:bg-indigo-950 text-indigo-200 text-xs font-bold px-2.5 py-1 rounded-lg transition">🔊 Speak</button>
+                        </div>
+                        <!-- Vertically and horizontally centered content sandbox box -->
+                        <div class="flex-1 w-full flex flex-col justify-center items-center gap-3 overflow-hidden my-1">
+                            <img id="view-back-img" src="" class="hidden max-h-32 object-contain rounded-lg max-w-full" alt="Back Illustration">
+                            <div id="view-back-text" class="card-scrollbar markdown-body w-full text-base sm:text-lg font-medium text-indigo-100 text-left overflow-y-auto pr-2 max-h-full"></div>
+                        </div>
+                        <span class="text-xs text-indigo-300/70 italic self-center mt-2">🔄 Click again to flip back</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Interface Navigation Panel -->
+            <div class="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button id="prev-btn" class="flex-1 sm:flex-none p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition text-gray-600 font-semibold text-sm px-5">← Prev</button>
+                    <button id="shuffle-btn" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs p-2.5 rounded-xl transition">🔀 Shuffle</button>
+                    <button id="next-btn" class="flex-1 sm:flex-none p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition text-gray-600 font-semibold text-sm px-5">Next →</button>
+                </div>
+
+                <div id="grading-controls" class="invisible flex items-center gap-2 w-full sm:w-auto">
+                    <button id="mark-wrong" class="flex-1 sm:flex-none bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-5 py-2.5 rounded-xl text-sm font-semibold transition">❌ Incorrect</button>
+                    <button id="mark-right" class="flex-1 sm:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-5 py-2.5 rounded-xl text-sm font-semibold transition">✅ Correct</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                    <p class="text-xs text-emerald-600 font-bold uppercase tracking-wider">Correct</p>
+                    <p id="stats-correct" class="text-2xl font-bold text-emerald-800 mt-0.5">0</p>
+                </div>
+                <div class="bg-rose-50 border border-rose-100 rounded-xl p-3 text-center">
+                    <p class="text-xs text-rose-600 font-bold uppercase tracking-wider">Incorrect</p>
+                    <p id="stats-wrong" class="text-2xl font-bold text-rose-800 mt-0.5">0</p>
+                </div>
+            </div>
+
+            <p class="text-center text-xs text-gray-400 font-medium">Loaded Deck Inventory Size: <span id="deck-count" class="font-bold text-gray-500">0</span> cards</p>
+        </div>
+
+        <!-- Celebration Modal -->
+        <div id="celebration-screen" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center space-y-6">
+            <div class="text-5xl">🏆</div>
+            <div class="space-y-2">
+                <h2 class="text-2xl font-bold text-gray-900">Deck Finished!</h2>
+                <p class="text-gray-500 text-sm">Review run successfully compiled below.</p>
+            </div>
+            <div class="inline-block bg-indigo-50 border border-indigo-100 px-8 py-4 rounded-2xl">
+                <p class="text-xs font-bold uppercase tracking-widest text-indigo-600">Final Precision Score</p>
+                <p id="final-score-value" class="text-4xl font-extrabold text-indigo-900 mt-1">0%</p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 max-w-sm mx-auto">
+                <button id="cram-missed-btn" class="hidden flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition text-sm">❌ Cram Missed Cards</button>
+                <button id="restart-quiz-btn" class="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition text-sm">🔄 Restart Deck</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let masterDeck = [
+            { frontText: "Welcome! Click **Load Deck** up top to upload your custom JSON card study files directly.", frontImg: "", backText: "This layout features scrolling text displays, left text alignment, Markdown interpreters, and Speech engines.", backImg: "" }
+        ];
+
+        // Read global saved deck cache context
+        const saved = localStorage.getItem('local_flashcards_deck');
+        if (saved) { try { masterDeck = JSON.parse(saved); } catch(e){} }
+
+        let quizDeck = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let answeredCards = new Set();
+        let missedCardObjects = [];
+
+        const flashcard = document.getElementById('flashcard');
+        const gradingControls = document.getElementById('grading-controls');
+        const quizArea = document.getElementById('quiz-area');
+        const celebrationScreen = document.getElementById('celebration-screen');
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('dark_mode_active') === 'true') document.body.classList.add('dark-mode');
+            startQuizSession(masterDeck);
+        });
+
+        flashcard.addEventListener('click', toggleCardFlip);
+        document.getElementById('theme-toggle').addEventListener('click', toggleDarkModeTheme);
+        document.getElementById('prev-btn').addEventListener('click', () => navigateDeck(-1));
+        document.getElementById('next-btn').addEventListener('click', () => navigateDeck(1));
+        document.getElementById('shuffle-btn').addEventListener('click', shuffleCurrentQuizSession);
+        document.getElementById('mark-right').addEventListener('click', () => recordGrade(true));
+        document.getElementById('mark-wrong').addEventListener('click', () => recordGrade(false));
+        document.getElementById('restart-quiz-btn').addEventListener('click', () => startQuizSession(masterDeck));
+        document.getElementById('cram-missed-btn').addEventListener('click', () => startQuizSession(missedCardObjects));
+        document.getElementById('import-deck-file').addEventListener('change', importDeckDataJSON);
+
+        document.getElementById('tts-front').addEventListener('click', (e) => { e.stopPropagation(); speakText(quizDeck[currentIndex]?.frontText); });
+        document.getElementById('tts-back').addEventListener('click', (e) => { e.stopPropagation(); speakText(quizDeck[currentIndex]?.backText); });
+
+        function toggleDarkModeTheme() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('dark_mode_active', isDark);
+        }
+
+        function startQuizSession(cardSourceArray) {
+            quizDeck = [...cardSourceArray];
+            currentIndex = 0; correctCount = 0; wrongCount = 0;
+            answeredCards.clear(); missedCardObjects = [];
+            celebrationScreen.classList.add('hidden');
+            quizArea.classList.remove('hidden');
+            resetCardFaceAnimation();
+            renderDeckState();
+        }
+
+        function shuffleCurrentQuizSession() {
+            if (quizDeck.length <= 1) return;
+            for (let i = quizDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [quizDeck[i], quizDeck[j]] = [quizDeck[j], quizDeck[i]];
+            }
+            startQuizSession(quizDeck);
+        }
+
+        function speakText(rawText) {
+            if (!rawText) return;
+            window.speechSynthesis.cancel();
+            const cleanText = rawText.replace(/[\*\`\#\-\_\>]/g, "");
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(cleanText));
+        }
+
+        function toggleCardFlip() {
+            if (quizDeck.length === 0) return;
+            isFlipped = !isFlipped;
+            if (isFlipped) { flashcard.classList.add('is-flipped'); gradingControls.classList.remove('invisible'); }
+            else { flashcard.classList.remove('is-flipped'); }
+        }
+
+        function resetCardFaceAnimation() {
+            isFlipped = false;
+            flashcard.classList.remove('is-flipped');
+            gradingControls.classList.add('invisible');
+        }
+
+        function navigateDeck(dir) {
+            if (quizDeck.length === 0) return;
+            resetCardFaceAnimation();
+            currentIndex += dir;
+            if (currentIndex < 0) currentIndex = quizDeck.length - 1;
+            else if (currentIndex >= quizDeck.length) {
+                if (answeredCards.size >= quizDeck.length) { showCelebrationSummary(); return; }
+                currentIndex = 0;
+            }
+            setTimeout(renderDeckState, 150);
+        }
+
+        function recordGrade(isCorrect) {
+            if (!answeredCards.has(currentIndex)) {
+                answeredCards.add(currentIndex);
+                if (isCorrect) correctCount++; 
+                else { wrongCount++; missedCardObjects.push(quizDeck[currentIndex]); }
+            }
+            navigateDeck(1);
+        }
+
+        function renderDeckState() {
+            document.getElementById('deck-count').textContent = quizDeck.length;
+            if (quizDeck.length === 0) return;
+
+            const currentCard = quizDeck[currentIndex];
+            document.getElementById('view-front-text').innerHTML = marked.parse(currentCard.frontText || "");
+            document.getElementById('view-back-text').innerHTML = marked.parse(currentCard.backText || "");
+
+            toggleImageEl('view-front-img', currentCard.frontImg);
+            toggleImageEl('view-back-img', currentCard.backImg);
+
+            document.getElementById('view-front-text').scrollTop = 0;
+            document.getElementById('view-back-text').scrollTop = 0;
+
+            document.getElementById('progress-text').textContent = `${currentIndex + 1}/${quizDeck.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / quizDeck.length) * 100}%`;
+            document.getElementById('stats-correct').textContent = correctCount;
+            document.getElementById('stats-wrong').textContent = wrongCount;
+
+            const total = correctCount + wrongCount;
+            document.getElementById('score-percent').textContent = total > 0 ? `${Math.round((correctCount / total) * 100)}%` : "0%";
+        }
+
+        function toggleImageEl(id, src) {
+            const el = document.getElementById(id);
+            if(src) { el.src = src; el.classList.remove('hidden'); } else el.classList.add('hidden');
+        }
+
+        function showCelebrationSummary() {
+            quizArea.classList.add('hidden');
+            celebrationScreen.classList.remove('hidden');
+            const total = correctCount + wrongCount;
+            document.getElementById('final-score-value').textContent = total > 0 ? `${Math.round((correctCount / total) * 100)}%` : "0%";
+            
+            const cramBtn = document.getElementById('cram-missed-btn');
+            if (missedCardObjects.length > 0) cramBtn.classList.remove('hidden');
+            else cramBtn.classList.add('hidden');
+        }
+
+        function importDeckDataJSON(e) {
+            const reader = new FileReader();
+            if(!e.target.files[0]) return;
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if(Array.isArray(parsed)) {
+                        masterDeck = parsed;
+                        localStorage.setItem('local_flashcards_deck', JSON.stringify(masterDeck));
+                        startQuizSession(masterDeck);
+                    }
+                } catch(err) { alert("Invalid file structure profile input arrays."); }
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+    </script>
+</body>
+</html>
