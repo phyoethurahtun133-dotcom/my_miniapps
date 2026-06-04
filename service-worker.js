@@ -1,7 +1,7 @@
 const CACHE_NAME = 'ror-colregs-v1';
 const ASSETS_TO_CACHE = [
   'index.html',
-  'manifest-editor.json'
+  'manifest-editor.json',
 ];
 
 // Install Event - Pre-caches the app files
