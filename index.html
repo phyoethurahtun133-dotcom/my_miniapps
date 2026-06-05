@@ -20,6 +20,18 @@
             storeName: 'shared_hub_data'
         });
 
+        // ===== STORAGE KEYS =====
+        const FLASHCARD_VAULT_KEY = 'shared_flashcard_vault';
+
+        const ROR_DECKS_KEY = 'ror_custom_decks';
+        const ROR_CARDS_KEY = 'ror_offline_ultimate_cards';
+
+        const VIEWER_DECKS_KEY = 'ror_viewer_decks';
+        const VIEWER_CARDS_KEY = 'ror_viewer_cards';
+
+        const LAST_SAVE_KEY = 'studio_last_save';
+        const DATABASE_VERSION = 1;
+
         // Fixed Service Worker Chain
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -30,6 +42,43 @@
                 }
             });
         }
+        async function checkDatabaseVersion() {
+
+                const savedVersion =
+                    await localforage.getItem('database_version');
+
+                if (!savedVersion) {
+
+                    await localforage.setItem(
+                        'database_version',
+                        DATABASE_VERSION
+                    );
+
+                    console.log(
+                        'Database initialized v' +
+                        DATABASE_VERSION
+                    );
+
+                    return;
+                }
+
+                if (savedVersion < DATABASE_VERSION) {
+
+                    console.log(
+                        'Database upgrade needed:',
+                        savedVersion,
+                        '->',
+                        DATABASE_VERSION
+                    );
+
+                    // future migration code goes here
+
+                    await localforage.setItem(
+                        'database_version',
+                        DATABASE_VERSION
+                    );
+                }
+            }
     </script>
 
     <style>
@@ -1130,6 +1179,7 @@
 
         // NEW ROR Init
     window.addEventListener('DOMContentLoaded', async () => {
+        await checkDatabaseVersion();
     try {
         const localCards = await localforage.getItem('ror_offline_ultimate_cards');
         if (localCards) savedCustomCards = localCards;
@@ -2466,7 +2516,7 @@ alert(`Successfully imported ${cardsToImport.length} cards!`);
             }
         };
 
-        const loadedVault = localStorage.getItem('studio_vault_system');
+        const loadedVault = localStorage.getItem('FLASHCARD_VAULT_KEY');
         if (loadedVault) { try { vault = JSON.parse(loadedVault); } catch(e) { console.error(e); } }
 
         let quizDeck = []; let currentIndex = 0; let isFlipped = false; let correctCount = 0; let wrongCount = 0;
@@ -2492,9 +2542,10 @@ alert(`Successfully imported ${cardsToImport.length} cards!`);
 
         // NEW Flashcard Init
 window.addEventListener('DOMContentLoaded', async () => {
+    await checkDatabaseVersion();
     try {
         // Await the asynchronous database fetch
-        const loadedVault = await localforage.getItem('studio_vault_system');
+        const loadedVault = await localforage.getItem('FLASHCARD_VAULT_KEY');
         if (loadedVault) { 
             vault = loadedVault; // No JSON.parse needed!
         }
@@ -2573,7 +2624,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             try {
                 // No JSON.stringify needed with localforage!
                 // SUCCESS: Use setItem to write the live 'vault' object into the shared database
-                await localforage.setItem('shared_flashcard_vault', vault);
+                await localforage.setItem('FLASHCARD_VAULT_KEY', vault);
                 await localforage.setItem('studio_last_save', new Date().toISOString());
             } 
             catch(err) {
