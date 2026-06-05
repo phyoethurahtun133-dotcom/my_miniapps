@@ -23,12 +23,6 @@
         // ===== STORAGE KEYS =====
         const FLASHCARD_VAULT_KEY = 'shared_flashcard_vault';
 
-        const ROR_DECKS_KEY = 'ror_custom_decks';
-        const ROR_CARDS_KEY = 'ror_offline_ultimate_cards';
-
-        const VIEWER_DECKS_KEY = 'ror_viewer_decks';
-        const VIEWER_CARDS_KEY = 'ror_viewer_cards';
-
         const LAST_SAVE_KEY = 'studio_last_save';
         const DATABASE_VERSION = 1;
 
@@ -79,7 +73,7 @@
                     );
                 }
             }
-    </script>
+</script>
 
     <style>
         /* Modern CSS variables for premium dark-mode maritime aesthetic */
@@ -835,6 +829,16 @@
                         <select id="deck-select" class="flex-1 p-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"></select>
                         <button id="new-deck-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition">＋ New</button>
                     </div>
+                    <div class="mt-6 p-4 bg-[#1e293b] border border-slate-700 rounded-xl">
+                        <h4 class="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                            <span>🔀</span> Practice Multiple Decks (Mixed & Scrambled)
+                        </h4>
+                        <div id="mixed-decks-checkboxes" class="space-y-2 max-h-48 overflow-y-auto mb-4 p-2 bg-[#0f172a] rounded-lg border border-slate-800">
+                            </div>
+                        <button onclick="startMixedDeckPractice()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg transition text-sm shadow-md">
+                            Start Scrambled Mix Practice
+                        </button>
+                    </div>
                     <!-- Inside the Multi-Deck Vault Manager, update the bottom flex row: -->
                     <div class="flex justify-between items-center pt-1">
                             <span class="text-xs text-gray-500 font-medium">Active System Deck</span>
@@ -1505,6 +1509,7 @@ async function saveData() {
 
         vault.decks[firstDeck].cards.push({
             frontText: "",
+            rawRorData: sourceCard, // Added for cross-app compatibility
             rorLights: JSON.parse(
                 JSON.stringify(sourceCard.lights || [])
             ),
@@ -1516,6 +1521,7 @@ async function saveData() {
         // Fix: Trigger the Flashcard app's own save and UI update functions
         if (typeof saveVaultToStorage === 'function') saveVaultToStorage();
         if (typeof initVaultUI === 'function') initVaultUI();
+        if (typeof loadActiveDeckSession === 'function') loadActiveDeckSession(); // Refreshes the active session immediately
 
         showOfflineAlert("Card sent to Flashcard Studio!");
     }
@@ -1547,6 +1553,11 @@ function exportCurrentDeckToFlashcards() {
         // Deck name
         let deckName = document.getElementById('decks-container')?.options[document.getElementById('decks-container').selectedIndex]?.text || `ROR Deck ${currentSet}`;
         deckName = deckName.replace(/\s*\(\d+\)\s*$/, '');
+        
+        // Ensure the anchor prefix is added
+        if (!deckName.startsWith("⚓ ROR:")) {
+            deckName = "⚓ ROR: " + deckName;
+        }
 
         // Create new flashcard deck
         let existingDeckId = null;
@@ -1578,8 +1589,9 @@ function exportCurrentDeckToFlashcards() {
             if (card.rule) parts.push(`Rule: ${card.rule}`);
             if (card.action) parts.push(`Action: ${card.action}`);
 
-            vault.decks[existingDeckId].cards.push({
+           vault.decks[existingDeckId].cards.push({
                 frontText: "",
+                rawRorData: card, // Added for cross-app compatibility
                 rorLights: JSON.parse(
                     JSON.stringify(card.lights || [])
                 ),
@@ -1592,6 +1604,7 @@ function exportCurrentDeckToFlashcards() {
         // Fix: Trigger the Flashcard app's own save and UI update functions
         if (typeof saveVaultToStorage === 'function') saveVaultToStorage();
         if (typeof initVaultUI === 'function') initVaultUI();
+        if (typeof loadActiveDeckSession === 'function') loadActiveDeckSession(); // Refreshes the active session immediately
 
         showOfflineAlert(`${deckSet.length} cards exported to Flashcard Studio.`);
     }
@@ -2680,6 +2693,23 @@ function getStorageUsageMB() {
 
         App2deckSelect.appendChild(opt);
     });
+    // NEW: Populate the Mixed Deck checkbox list
+    const mixedContainer = document.getElementById('mixed-decks-checkboxes');
+    if (mixedContainer) {
+        mixedContainer.innerHTML = '';
+        Object.keys(vault.decks).forEach(id => {
+            const deck = vault.decks[id];
+            const cardCount = deck.cards ? deck.cards.length : 0;
+            
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-3 p-1.5 hover:bg-slate-800/50 rounded transition text-slate-300 text-sm";
+            div.innerHTML = `
+                <input type="checkbox" value="${id}" class="mixed-deck-cb w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500">
+                <label class="cursor-pointer select-none flex-1 truncate">${deck.name} <span class="text-xs text-slate-500">(${cardCount} cards)</span></label>
+            `;
+            mixedContainer.appendChild(div);
+        });
+    }
 }
 
         function loadActiveDeckSession() { const activeCards = vault.decks[vault.activeDeckId]?.cards || []; startQuizSession(activeCards); }
@@ -2851,16 +2881,14 @@ function buildRORLightsHtml(lights) {
                 document.getElementById('progress-text').textContent = `0/0`; document.getElementById('progress-bar').style.width = `0%`; return;
             }
             const currentCard = quizDeck[currentIndex];
-            if (currentCard.rorLights) {
+            const rorLightsArray = currentCard.rawRorData ? currentCard.rawRorData.lights : currentCard.rorLights;
 
-    document.getElementById('view-front-text').innerHTML =
-        buildRORLightsHtml(currentCard.rorLights);
-
-} else {
-
-    document.getElementById('view-front-text').innerHTML =
-        marked.parse(currentCard.frontText || "");
-}
+            if (rorLightsArray && rorLightsArray.length > 0) {
+                document.getElementById('view-front-text').innerHTML = buildRORLightsHtml(rorLightsArray);
+            } else {
+                document.getElementById('view-front-text').innerHTML = marked.parse(currentCard.frontText || "");
+            }
+            
             document.getElementById('view-back-text').innerHTML = marked.parse(currentCard.backText || "");
             toggleImageEl('view-front-img', currentCard.frontImg); toggleImageEl('view-back-img', currentCard.backImg);
             document.getElementById('view-front-text').scrollTop = 0; document.getElementById('view-back-text').scrollTop = 0;
@@ -3058,6 +3086,49 @@ function buildRORLightsHtml(lights) {
         window.addEventListener('beforeunload', () => {
     saveVaultToStorage();
         });
+// NEW: Fisher-Yates Shuffling Algorithm
+function scrambleArray(array) {
+    let shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// NEW: Combines selected decks and triggers the player session
+function startMixedDeckPractice() {
+    const checkboxes = document.querySelectorAll('.mixed-deck-cb:checked');
+    if (checkboxes.length === 0) {
+        alert("Please select at least one deck to practice.");
+        return;
+    }
+
+    let combinedCards = [];
+
+    // Gather all cards from checked decks
+    checkboxes.forEach(cb => {
+        const deckId = cb.value;
+        const deck = vault.decks[deckId];
+        if (deck && deck.cards && deck.cards.length > 0) {
+            // Deep copy cards to avoid modifying the original vault data state
+            const clonedCards = JSON.parse(JSON.stringify(deck.cards));
+            combinedCards = combinedCards.concat(clonedCards);
+        }
+    });
+
+    if (combinedCards.length === 0) {
+        alert("The selected decks do not contain any cards.");
+        return;
+    }
+
+    // Scramble the master card pool
+    const practiceDeck = scrambleArray(combinedCards);
+
+    // Feed the scrambled cards directly into your existing quiz engine
+    startQuizSession(practiceDeck);
+}
+
     </script>
 </body>
 </html>
