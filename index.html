@@ -11,69 +11,71 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="shared-data.js"></script>
 
-<script>
-        // Synchronized Database Configuration
-        localforage.config({
-            name: 'UnifiedLearningHub_SharedDB',
-            storeName: 'shared_hub_data'
-        });
-
-        // ===== STORAGE KEYS =====
-        const FLASHCARD_VAULT_KEY = 'shared_flashcard_vault';
-
-        const LAST_SAVE_KEY = 'studio_last_save';
-        const DATABASE_VERSION = 1;
-
-        // Fixed Service Worker Chain
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                if (location.protocol === 'http:' || location.protocol === 'https:') {
-                    navigator.serviceWorker.register('service-worker.js')
-                    .then(reg => console.log('PWA Service Worker Linked!'))
-                    .catch(err => console.error('PWA Registration failed:', err));
-                }
+    <script>
+            // Synchronized Database Configuration
+            localforage.config({
+                name: 'UnifiedLearningHub_SharedDB',
+                storeName: 'shared_hub_data'
             });
-        }
-        async function checkDatabaseVersion() {
 
-                const savedVersion =
-                    await localforage.getItem('database_version');
+            // ===== STORAGE KEYS =====
+            const FLASHCARD_VAULT_KEY = 'shared_flashcard_vault';
 
-                if (!savedVersion) {
+            const LAST_SAVE_KEY = 'studio_last_save';
+            const DATABASE_VERSION = 1;
 
-                    await localforage.setItem(
-                        'database_version',
-                        DATABASE_VERSION
-                    );
-
-                    console.log(
-                        'Database initialized v' +
-                        DATABASE_VERSION
-                    );
-
-                    return;
-                }
-
-                if (savedVersion < DATABASE_VERSION) {
-
-                    console.log(
-                        'Database upgrade needed:',
-                        savedVersion,
-                        '->',
-                        DATABASE_VERSION
-                    );
-
-                    // future migration code goes here
-
-                    await localforage.setItem(
-                        'database_version',
-                        DATABASE_VERSION
-                    );
-                }
+            // Fixed Service Worker Chain
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    if (location.protocol === 'http:' || location.protocol === 'https:') {
+                        navigator.serviceWorker.register('service-worker.js')
+                        .then(reg => console.log('PWA Service Worker Linked!'))
+                        .catch(err => console.error('PWA Registration failed:', err));
+                    }
+                });
             }
-</script>
+            async function checkDatabaseVersion() {
+
+                    const savedVersion =
+                        await localforage.getItem('database_version');
+
+                    if (!savedVersion) {
+
+                        await localforage.setItem(
+                            'database_version',
+                            DATABASE_VERSION
+                        );
+
+                        console.log(
+                            'Database initialized v' +
+                            DATABASE_VERSION
+                        );
+
+                        return;
+                    }
+
+                    if (savedVersion < DATABASE_VERSION) {
+
+                        console.log(
+                            'Database upgrade needed:',
+                            savedVersion,
+                            '->',
+                            DATABASE_VERSION
+                        );
+
+                        // future migration code goes here
+
+                        await localforage.setItem(
+                            'database_version',
+                            DATABASE_VERSION
+                        );
+                    }
+                }
+    </script>
 
     <style>
         /* Modern CSS variables for premium dark-mode maritime aesthetic */
@@ -627,9 +629,12 @@
                             <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.75rem;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <span class="palette-label" style="color: var(--accent-cyan);">CSV Light Code String:</span>
-                                    <button onclick="copyCSVCode()" class="toggle-tool-btn" style="padding: 0.2rem 0.5rem; font-size: 0.65rem;" title="Copy to clipboard">Copy</button>
+                                    <div style="display: flex; gap: 0.25rem;">
+                                        <button onclick="loadLightsFromCSV()" class="toggle-tool-btn" style="padding: 0.2rem 0.5rem; font-size: 0.65rem; color: #10b981; border-color: rgba(16, 185, 129, 0.3);" title="Render lights from pasted code">Load</button>
+                                        <button onclick="copyCSVCode()" class="toggle-tool-btn" style="padding: 0.2rem 0.5rem; font-size: 0.65rem;" title="Copy to clipboard">Copy</button>
+                                    </div>
                                 </div>
-                                <input type="text" id="csv-light-code-output" class="form-input" readonly placeholder="Place lights to generate code..." style="font-family: monospace; font-size: 0.7rem; color: #bae6fd; background-color: rgba(0,0,0,0.6);">
+                                <input type="text" id="csv-light-code-output" class="form-input" placeholder="Paste light code here (e.g. red:145:90|white:145:130) and click Load" style="font-family: monospace; font-size: 0.7rem; color: #bae6fd; background-color: rgba(0,0,0,0.6);">
                             </div>
                         </div>
 
@@ -936,25 +941,25 @@
 
                     <div class="perspective-1000 w-full h-96 group">
                         <div id="flashcard" class="w-full h-full relative transform-style-3d transition-transform duration-500 cursor-pointer select-none rounded-2xl shadow-md border border-gray-200/60">
-                            <div class="absolute inset-0 backface-hidden bg-white rounded-2xl p-6 flex flex-col justify-between items-start text-left">
+                            <div class="absolute inset-0 backface-hidden bg-white rounded-2xl p-3 flex flex-col justify-between items-start text-left">
                                 <div class="w-full flex justify-between items-center mb-2">
                                     <span class="text-xs font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-md">Front (Question)</span>
                                     <button id="tts-front" class="bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-gray-200 text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1">🔊 Speak</button>
                                 </div>
                                 <div class="flex-1 w-full flex flex-col justify-center items-center gap-3 overflow-hidden my-1">
-                                    <img id="view-front-img" src="" class="hidden max-h-[70%] w-full object-contain rounded-xl drop-shadow-md" alt="Front Illustration">
+                                    <img id="view-front-img" src="" class="hidden max-h-[98%] w-full object-contain rounded-xl drop-shadow-md" alt="Front Illustration">
                                     <div id="view-front-text" class="card-scrollbar markdown-body w-full text-base sm:text-lg font-semibold text-gray-800 text-left overflow-y-auto pr-2 max-h-full"></div>
                                 </div>
                                 <span class="text-xs text-gray-400 italic self-center mt-2">💡 Click card to flip</span>
                             </div>
 
-                            <div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-900 rounded-2xl p-6 flex flex-col justify-between items-start text-left text-white">
+                            <div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-900 rounded-2xl p-3 flex flex-col justify-between items-start text-left text-white">
                                 <div class="w-full flex justify-between items-center mb-2">
                                     <span class="text-xs font-bold uppercase tracking-widest text-indigo-300 bg-indigo-950/50 px-2.5 py-1 rounded-md">Back (Answer)</span>
                                     <button id="tts-back" class="bg-indigo-950/50 hover:bg-indigo-950 text-indigo-200 text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1">🔊 Speak</button>
                                 </div>
                                 <div class="flex-1 w-full flex flex-col justify-center items-center gap-3 overflow-hidden my-1">
-                                    <img id="view-back-img" src="" class="hidden max-h-[70%] w-full object-contain rounded-xl drop-shadow-md" alt="Back Illustration">
+                                    <img id="view-back-img" src="" class="hidden max-h-[98%] w-full object-contain rounded-xl drop-shadow-md" alt="Back Illustration">
                                     <div id="view-back-text" class="card-scrollbar markdown-body w-full text-base sm:text-lg font-medium text-indigo-100 text-left overflow-y-auto pr-2 max-h-full"></div>
                                 </div>
                                 <span class="text-xs text-indigo-300/70 italic self-center mt-2">🔄 Click to flip back</span>
@@ -1031,11 +1036,11 @@
                             </div>
                             <div class="space-y-1">
                                 <div class="flex justify-between items-center text-xs font-bold text-gray-500 dark:text-gray-300 uppercase"><span>📐 Bounding Box Width</span><span id="width-val">240px</span></div>
-                                <input type="range" id="cropper-box-width" min="100" max="380" step="5" value="240" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                                <input type="range" id="cropper-box-width" min="100" max="500" step="5" value="240" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
                             </div>
                             <div class="space-y-1">
                                 <div class="flex justify-between items-center text-xs font-bold text-gray-500 dark:text-gray-300 uppercase"><span>📏 Bounding Box Height</span><span id="height-val">180px</span></div>
-                                <input type="range" id="cropper-box-height" min="100" max="240" step="5" value="180" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                                <input type="range" id="cropper-box-height" min="100" max="500" step="5" value="180" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
                             </div>
                         </div>
                         <div class="flex flex-col justify-between gap-3">
@@ -1090,52 +1095,6 @@
 
 
     <script>
-        // Mastering preset deck library matching real navigation lights cards
-        const PRESETS = [
-            // SET 1: Power & Sail
-            { id: "s1-1", set: 1, title: "Power-Driven Vessel", length: "< 50m", vesselFunction: "", status: "Underway / Making way", aspect: "Head-on", daySignal: "None", soundSignal: "1 Prolonged (Fog)", rule: "Rule 23", action: "", lights: [{ x: 145, y: 90, color: "white" }, { x: 100, y: 220, color: "red" }, { x: 190, y: 220, color: "green" }] },
-            { id: "s1-2", set: 1, title: "Power-Driven Vessel", length: ">= 50m", vesselFunction: "", status: "Underway / Making way", aspect: "Port Side aspect", daySignal: "None", soundSignal: "1 Prolonged (Fog)", rule: "Rule 23", action: "", lights: [{ x: 190, y: 80, color: "white" }, { x: 110, y: 130, color: "white" }, { x: 150, y: 240, color: "red" }] },
-            { id: "s1-3", set: 1, title: "Sailing Vessel", length: "Any length", vesselFunction: "", status: "Underway under sail", aspect: "Starboard Side aspect", daySignal: "Cone apex down (if motor used)", soundSignal: "1 Prol. + 2 Short (Fog)", rule: "Rule 25", action: "", lights: [{ x: 145, y: 230, color: "green" }] },
-
-            // SET 2: Fishing & Trawling
-            { id: "s2-1", set: 2, title: "Engaged in Trawling", length: "< 50m", vesselFunction: "Dragging Fishing Apparatus", status: "Making way", aspect: "Port side", daySignal: "Two cones apex together", soundSignal: "1 Prol. + 2 Short", rule: "Rule 26(b)", action: "", lights: [{ x: 145, y: 90, color: "green" }, { x: 145, y: 130, color: "white" }, { x: 95, y: 230, color: "red" }] },
-            { id: "s2-2", set: 2, title: "Fishing (Not Trawling)", length: "Any length", vesselFunction: "Engaged in fishing", status: "Not making way", aspect: "All-round view", daySignal: "Two cones apex together", soundSignal: "1 Prol. + 2 Short", rule: "Rule 26(c)", action: "", lights: [{ x: 145, y: 115, color: "red" }, { x: 145, y: 165, color: "white" }] },
-
-            // SET 3: Pilot & Anchor
-            { id: "s3-1", set: 3, title: "Vessel on Pilotage Duty", length: "Any length", vesselFunction: "Engaged on Pilotage Duty", status: "Underway", aspect: "Head-on", daySignal: "Flag H (Hotel)", soundSignal: "4 Short blasts (ID)", rule: "Rule 29", action: "Proceed with caution, maintain safe distance for pilot transfer.", lights: [{ x: 145, y: 80, color: "white" }, { x: 145, y: 120, color: "red" }, { x: 100, y: 220, color: "red" }, { x: 190, y: 220, color: "green" }] },
-            { id: "s3-2", set: 3, title: "Vessel at Anchor", length: ">= 50m", vesselFunction: "", status: "At Anchor", aspect: "Port side", daySignal: "One Black Ball", soundSignal: "Rapid Bell 5s", rule: "Rule 30", action: "", lights: [{ x: 90, y: 140, color: "white" }, { x: 200, y: 190, color: "white" }] },
-
-            // SET 4: NUC & RAM
-            { id: "s4-1", set: 4, title: "Not Under Command (NUC)", length: "Any length", vesselFunction: "Unable to keep out of the way", status: "Making way", aspect: "Starboard Side", daySignal: "Two Black Balls", soundSignal: "1 Prol. + 2 Short", rule: "Rule 27(a)", action: "Give way. Keep clear.", lights: [{ x: 165, y: 90, color: "red" }, { x: 165, y: 130, color: "red" }, { x: 110, y: 240, color: "green" }] },
-            { id: "s4-2", set: 4, title: "Not Under Command (NUC)", length: "Any length", vesselFunction: "", status: "Making way", aspect: "Head-on", daySignal: "Two Black Balls", soundSignal: "1 Prol. + 2 Short", rule: "Rule 27(a)", action: "Give way. Alter course to maintain safe passing.", lights: [{ x: 145, y: 90, color: "red" }, { x: 145, y: 130, color: "red" }, { x: 95, y: 230, color: "red" }, { x: 195, y: 230, color: "green" }] },
-            { id: "s4-3", set: 4, title: "Restricted Ability to Maneuver", length: "Any length", vesselFunction: "Restricted Ability to Maneuver", status: "Not making way", aspect: "All-round", daySignal: "Ball-Diamond-Ball", soundSignal: "1 Prol. + 2 Short", rule: "Rule 27(b)", action: "Keep clear of the vessel.", lights: [{ x: 145, y: 90, color: "red" }, { x: 145, y: 130, color: "white" }, { x: 145, y: 170, color: "red" }] },
-
-            // SET 5: Tow & CBD
-            { id: "s5-1", set: 5, title: "Constrained by Draught", length: "Any length", vesselFunction: "Navigation restricted by draught", status: "Making way", aspect: "Port aspect", daySignal: "Cylinder", soundSignal: "1 Prol. + 2 Short", rule: "Rule 28", action: "Avoid crossing ahead, maintain wide berth.", lights: [{ x: 165, y: 80, color: "red" }, { x: 165, y: 120, color: "red" }, { x: 165, y: 160, color: "red" }, { x: 95, y: 240, color: "red" }] },
-            { id: "s5-2", set: 5, title: "Towing (Tow > 200m)", length: "Any length", vesselFunction: "Towing astern", status: "Underway", aspect: "Starboard Side", daySignal: "Diamond", soundSignal: "1 Prol. + 2 Short", rule: "Rule 24(a)", action: "", lights: [{ x: 130, y: 80, color: "white" }, { x: 130, y: 120, color: "white" }, { x: 130, y: 160, color: "white" }, { x: 190, y: 240, color: "green" }] }
-        ];
-
-        const defaultDecks = [
-            { id: 1, name: "Set 1: Power & Sail", custom: false },
-            { id: 2, name: "Set 2: Fishing", custom: false },
-            { id: 3, name: "Set 3: Pilot & Anchor", custom: false },
-            { id: 4, name: "Set 4: NUC & RAM", custom: false },
-            { id: 5, name: "Set 5: Tow & CBD", custom: false }
-        ];
-
-        const ruleTexts = {
-            "Rule 23": "Rule 23 - Power-driven vessels underway:\n(a) A power-driven vessel underway shall exhibit:\n(i) a masthead light forward;\n(ii) a second masthead light abaft of and higher than the forward one;\n(iii) sidelights;\n(iv) a sternlight.",
-            "Rule 24(a)": "Rule 24 - Towing and pushing:\n(a) A power-driven vessel when towing shall exhibit:\n(i) instead of the light prescribed in Rule 23(a)(i) or (a)(ii), two masthead lights in a vertical line. When the length of the tow exceeds 200 meters, three such lights in a vertical line;\n(ii) sidelights;\n(iii) a sternlight;\n(iv) a towing light in a vertical line above the sternlight;\n(v) when the length of the tow exceeds 200 meters, a diamond shape where it can best be seen.",
-            "Rule 25": "Rule 25 - Sailing vessels underway and vessels under oars:\n(a) A sailing vessel underway shall exhibit:\n(i) sidelights;\n(ii) a sternlight.",
-            "Rule 26(b)": "Rule 26 - Fishing vessels:\n(b) A vessel when engaged in trawling, by which is meant the dragging through the water of a dredge net or other apparatus used as a fishing appliance, shall exhibit:\n(i) two all-round lights in a vertical line, the upper being green and the lower white, or a shape consisting of two cones with their apexes together in a vertical line;\n(ii) a masthead light abaft of and higher than the all-round green light; a vessel of less than 50 meters in length shall not be obliged to exhibit such a light but may do so;\n(iii) when making way through the water, in addition to the lights prescribed in this paragraph, sidelights and a sternlight.",
-            "Rule 26(c)": "Rule 26 - Fishing vessels:\n(c) A vessel engaged in fishing, other than trawling, shall exhibit:\n(i) two all-round lights in a vertical line, the upper being red and the lower white, or a shape consisting of two cones with apexes together in a vertical line;\n(ii) when there is outlying gear extending more than 150 meters horizontally from the vessel, an all-round white light or a cone apex upwards in the direction of the gear;\n(iii) when making way through the water, in addition to the lights prescribed in this paragraph, sidelights and a sternlight.",
-            "Rule 27(a)": "Rule 27 - Vessels not under command or restricted in their ability to maneuver:\n(a) A vessel not under command shall exhibit:\n(i) two all-round red lights in a vertical line where they can best be seen;\n(ii) two balls or similar shapes in a vertical line where they can best be seen;\n(iii) when making way through the water, in addition to the lights prescribed in this paragraph, sidelights and a sternlight.",
-            "Rule 27(b)": "Rule 27 - Vessels not under command or restricted in their ability to maneuver:\n(b) A vessel restricted in her ability to maneuver, except a vessel engaged in mineclearance operations, shall exhibit:\n(i) three all-round lights in a vertical line where they can best be seen. The highest and lowest of these lights shall be red and the middle light shall be white;\n(ii) three shapes in a vertical line where they can best be seen. The highest and lowest of these shapes shall be balls and the middle one a diamond;\n(iii) when making way through the water, a masthead light or lights, sidelights and a sternlight, in addition to the lights prescribed in subparagraph (i);\n(iv) when at anchor, in addition to the lights or shapes prescribed in subparagraphs (i) and (ii), the light, lights or shape prescribed in Rule 30.",
-            "Rule 28": "Rule 28 - Vessels constrained by their draught:\nA vessel constrained by her draught may, in addition to the lights prescribed for power-driven vessels in Rule 23, exhibit where they can best be seen three all-round red lights in a vertical line, or a cylinder.",
-            "Rule 29": "Rule 29 - Pilot vessels:\n(a) A vessel engaged on pilotage duty shall exhibit:\n(i) at or near the masthead, two all-round lights in a vertical line, the upper being white and the lower red;\n(ii) when underway, in addition, sidelights and a sternlight;\n(iii) when at anchor, in addition to the lights prescribed in subparagraph (i), the light, lights or shape prescribed in Rule 30 for vessels at anchor.",
-            "Rule 30": "Rule 30 - Anchored vessels and vessels aground:\n(a) A vessel at anchor shall exhibit where it can best be seen:\n(i) in the fore part, an all-round white light or one ball;\n(ii) at or near the stern and at a lower level than the light forward, an all-round white light."
-        };
-
         let currentSet = 1; 
         let customDecks = [];
         let savedCustomCards = [];
@@ -1212,7 +1171,7 @@
                 const inputEl = searchContainer.querySelector('input');
                 inputEl.addEventListener('focus', () => inputEl.style.borderColor = 'var(--accent-cyan)');
                 inputEl.addEventListener('blur', () => inputEl.style.borderColor = 'var(--panel-border)');
-                inputEl.addEventListener('input', handleGlobalSearch);
+                inputEl.addEventListener('input', debounce(handleGlobalSearch, 300));
             }
         });
 
@@ -1388,7 +1347,17 @@ async function saveData() {
                 return;
             }
             if (shuffleMode) { deckSet.sort(() => Math.random() - 0.5); }
-            deckSet.forEach(card => { container.innerHTML += buildCardHtml(card, ''); });
+            // Create an array to hold all the HTML strings
+            const allCardsHtml = [];
+
+            // Push each card's HTML into the array memory
+            const cardArray = typeof deckCards !== 'undefined' ? deckCards : deckSet;
+            cardArray.forEach(card => { 
+                allCardsHtml.push(buildCardHtml(card, '')); 
+            });
+
+            // Update the DOM exactly once
+            container.innerHTML = allCardsHtml.join('');
         }
 
         function showRuleText(event, ruleName) {
@@ -1470,61 +1439,62 @@ async function saveData() {
 
 
         function sendToFlashcard(cardId) {
-        const sourceCard =
-            PRESETS.find(c => c.id === cardId) ||
-            savedCustomCards.find(c => c.id === cardId);
+            const sourceCard =
+                PRESETS.find(c => c.id === cardId) ||
+                savedCustomCards.find(c => c.id === cardId);
 
-        if (!sourceCard) {
-            showOfflineAlert("Card not found.");
-            return;
+            if (!sourceCard) {
+                showOfflineAlert("Card not found.");
+                return;
+            }
+
+            if (!vault || !vault.decks) {
+                showOfflineAlert("Flashcard Studio vault not ready.");
+                return;
+            }
+
+            // FIX: Target the currently active/selected deck ID, fall back to the first deck if none is set
+            const targetDeckId = vault.activeDeckId || Object.keys(vault.decks)[0];
+
+            if (!targetDeckId || !vault.decks[targetDeckId]) {
+                showOfflineAlert("No Flashcard deck exists.");
+                return;
+            }
+
+            // Build the back text dynamically, skipping empty properties
+            const buildBackText = (c) => {
+                const parts = [];
+                if (c.title) parts.push(`Vessel: ${c.title}`);
+                if (c.length) parts.push(`Length: ${c.length}`);
+                if (c.vesselFunction) parts.push(`Function: ${c.vesselFunction}`);
+                if (c.status) parts.push(`Status: ${c.status}`);
+                if (c.aspect) parts.push(`Aspect: ${c.aspect}`);
+                if (c.daySignal) parts.push(`Day Signal: ${c.daySignal}`);
+                if (c.soundSignal) parts.push(`Sound Signal: ${c.soundSignal}`);
+                if (c.rule) parts.push(`Rule: ${c.rule}`);
+                if (c.action) parts.push(`Action: ${c.action}`);
+                return parts.join('\n\n');
+            };
+
+            // FIX: Push to targetDeckId instead of firstDeck
+            vault.decks[targetDeckId].cards.push({
+                frontText: "",
+                rawRorData: sourceCard, // Added for cross-app compatibility
+                rorLights: JSON.parse(
+                    JSON.stringify(sourceCard.lights || [])
+                ),
+                backText: buildBackText(sourceCard),
+                frontImg: "",
+                backImg: ""
+            });
+
+            // Trigger the Flashcard app's own save and UI update functions
+            if (typeof saveVaultToStorage === 'function') saveVaultToStorage();
+            if (typeof initVaultUI === 'function') initVaultUI();
+            if (typeof loadActiveDeckSession === 'function') loadActiveDeckSession(); // Refreshes the active session immediately
+
+            showOfflineAlert(`Card sent to "${vault.decks[targetDeckId].name}"!`);
         }
-
-        // Fix: Use the global 'vault' object directly instead of localStorage
-        if (!vault || !vault.decks) {
-            showOfflineAlert("Flashcard Studio vault not ready.");
-            return;
-        }
-
-        const firstDeck = Object.keys(vault.decks)[0];
-
-        if (!firstDeck) {
-            showOfflineAlert("No Flashcard deck exists.");
-            return;
-        }
-
-        // Build the back text dynamically, skipping empty properties
-        const buildBackText = (c) => {
-            const parts = [];
-            if (c.title) parts.push(`Vessel: ${c.title}`);
-            if (c.length) parts.push(`Length: ${c.length}`);
-            if (c.vesselFunction) parts.push(`Function: ${c.vesselFunction}`);
-            if (c.status) parts.push(`Status: ${c.status}`);
-            if (c.aspect) parts.push(`Aspect: ${c.aspect}`);
-            if (c.daySignal) parts.push(`Day Signal: ${c.daySignal}`);
-            if (c.soundSignal) parts.push(`Sound Signal: ${c.soundSignal}`);
-            if (c.rule) parts.push(`Rule: ${c.rule}`);
-            if (c.action) parts.push(`Action: ${c.action}`);
-            return parts.join('\n\n');
-        };
-
-        vault.decks[firstDeck].cards.push({
-            frontText: "",
-            rawRorData: sourceCard, // Added for cross-app compatibility
-            rorLights: JSON.parse(
-                JSON.stringify(sourceCard.lights || [])
-            ),
-            backText: buildBackText(sourceCard),
-            frontImg: "",
-            backImg: ""
-        });
-
-        // Fix: Trigger the Flashcard app's own save and UI update functions
-        if (typeof saveVaultToStorage === 'function') saveVaultToStorage();
-        if (typeof initVaultUI === 'function') initVaultUI();
-        if (typeof loadActiveDeckSession === 'function') loadActiveDeckSession(); // Refreshes the active session immediately
-
-        showOfflineAlert("Card sent to Flashcard Studio!");
-    }
 
 
 function exportCurrentDeckToFlashcards() {
@@ -1811,6 +1781,58 @@ function exportCurrentDeckToFlashcards() {
             const output = document.getElementById('csv-light-code-output');
             if (customLights.length === 0) { output.value = ''; return; }
             output.value = customLights.map(l => `${l.color}:${l.x}:${l.y}`).join('|');
+        }
+
+        function loadLightsFromCSV() {
+            const inputEl = document.getElementById('csv-light-code-output');
+            const codeString = inputEl.value.trim();
+
+            // Prevent running if the input is empty
+            if (!codeString) {
+                showOfflineAlert("Please paste a CSV Light Code String first.");
+                return;
+            }
+
+            const parsedLights = [];
+            const entries = codeString.split('|');
+
+            // Loop through each segment (e.g., "red:141:66")
+            for (let entry of entries) {
+                const parts = entry.split(':');
+                
+                // Ensure the segment has exactly 3 parts: color, x, y
+                if (parts.length === 3) {
+                    const color = parts[0].trim();
+                    const x = parseInt(parts[1], 10);
+                    const y = parseInt(parts[2], 10);
+
+                    // Validate that coordinates are actual numbers
+                    if (!isNaN(x) && !isNaN(y)) {
+                        parsedLights.push({
+                            id: "l-" + Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                            x: x,
+                            y: y,
+                            color: color
+                        });
+                    }
+                }
+            }
+
+            // If valid lights were found, overwrite the current canvas
+            if (parsedLights.length > 0) {
+                customLights = parsedLights; // Update global state
+                
+                // Hide the "Tap here" canvas helper
+                document.getElementById('sandbox-hint').classList.add('hidden');
+                
+                // Re-render the canvas and the list
+                renderSandboxLights();
+                renderActiveLightsList();
+                
+                showOfflineAlert(`Successfully loaded ${parsedLights.length} lights to canvas!`);
+            } else {
+                showOfflineAlert("Invalid code string format. Expected format: color:x:y|color:x:y");
+            }
         }
 
        async function copyCSVCode() {
@@ -2260,6 +2282,15 @@ function exportCurrentDeckToFlashcards() {
             const popup = document.createElement('div'); popup.style.position = 'fixed'; popup.style.bottom = '32px'; popup.style.left = '50%'; popup.style.transform = 'translateX(-50%)'; popup.style.backgroundColor = '#0f172a'; popup.style.border = '1px solid #38bdf8'; popup.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.4)'; popup.style.color = '#fff'; popup.style.padding = '0.6rem 1.2rem'; popup.style.borderRadius = '0.75rem'; popup.style.fontSize = '0.8rem'; popup.style.fontWeight = 'bold'; popup.style.zIndex = '9999';
             popup.innerText = message; document.body.appendChild(popup);
             setTimeout(() => { popup.style.opacity = '0'; popup.style.transition = 'opacity 0.4s ease'; setTimeout(() => document.body.removeChild(popup), 400); }, 2500);
+        }
+
+        // Creates a delay so functions don't fire on every single keystroke
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
         }
 
         function handleGlobalSearch(e) {
@@ -2886,10 +2917,10 @@ function buildRORLightsHtml(lights) {
             if (rorLightsArray && rorLightsArray.length > 0) {
                 document.getElementById('view-front-text').innerHTML = buildRORLightsHtml(rorLightsArray);
             } else {
-                document.getElementById('view-front-text').innerHTML = marked.parse(currentCard.frontText || "");
+                document.getElementById('view-front-text').innerHTML = DOMPurify.sanitize(marked.parse(currentCard.frontText || ""));
             }
-            
-            document.getElementById('view-back-text').innerHTML = marked.parse(currentCard.backText || "");
+
+            document.getElementById('view-back-text').innerHTML = DOMPurify.sanitize(marked.parse(currentCard.backText || ""));
             toggleImageEl('view-front-img', currentCard.frontImg); toggleImageEl('view-back-img', currentCard.backImg);
             document.getElementById('view-front-text').scrollTop = 0; document.getElementById('view-back-text').scrollTop = 0;
             document.getElementById('progress-text').textContent = `${currentIndex + 1}/${quizDeck.length}`;
@@ -3059,17 +3090,41 @@ function buildRORLightsHtml(lights) {
             if (currentEditingSide === 'front' && !tempFrontImgBase64) { document.getElementById('front-image-name').textContent = "No file chosen"; } 
             else if (currentEditingSide === 'back' && !tempBackImgBase64) { document.getElementById('back-image-name').textContent = "No file chosen"; }
         }
-
+        
         document.getElementById('cropper-save-btn').addEventListener('click', () => {
-            const viewW = cropperViewport.clientWidth; const viewH = cropperViewport.clientHeight;
-            const finalCanvas = document.createElement('canvas'); finalCanvas.width = viewW * 2; finalCanvas.height = viewH * 2;
+            const viewW = cropperViewport.clientWidth; 
+            const viewH = cropperViewport.clientHeight;
+            
+            // FIX 1: Increase the export multiplier from 2 to 4 (or 5) for high-resolution output
+            const exportScale = 4; 
+
+            const finalCanvas = document.createElement('canvas'); 
+            finalCanvas.width = viewW * exportScale; 
+            finalCanvas.height = viewH * exportScale;
+            
             const ctx = finalCanvas.getContext('2d');
-            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-            ctx.translate(viewW, viewH); ctx.translate(cropState.x * 2, cropState.y * 2); ctx.rotate((cropState.rotation * Math.PI) / 180); ctx.scale(cropState.scale * 2, cropState.scale * 2);
+            ctx.imageSmoothingEnabled = true; 
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Adjust transformation math to use the new exportScale
+            ctx.translate(viewW * (exportScale / 2), viewH * (exportScale / 2)); 
+            ctx.translate(cropState.x * exportScale, cropState.y * exportScale); 
+            ctx.rotate((cropState.rotation * Math.PI) / 180); 
+            ctx.scale(cropState.scale * exportScale, cropState.scale * exportScale);
+            
             ctx.drawImage(originalImgElement, -originalImgElement.width / 2, -originalImgElement.height / 2, originalImgElement.width, originalImgElement.height);
-            const compressedBase64 = finalCanvas.toDataURL('image/jpeg', 0.78);
-            if (currentEditingSide === 'front') { tempFrontImgBase64 = compressedBase64; displayImageThumbnailInForm('front', tempFrontImgBase64); } 
-            else { tempBackImgBase64 = compressedBase64; displayImageThumbnailInForm('back', tempBackImgBase64); }
+            
+            // FIX 2: Increase JPEG quality from 0.78 to 0.95 (or use 'image/png' for lossless quality)
+            const compressedBase64 = finalCanvas.toDataURL('image/jpeg', 0.95);
+            
+            if (currentEditingSide === 'front') { 
+                tempFrontImgBase64 = compressedBase64; 
+                displayImageThumbnailInForm('front', tempFrontImgBase64); 
+            } else { 
+                tempBackImgBase64 = compressedBase64; 
+                displayImageThumbnailInForm('back', tempBackImgBase64); 
+            }
+            
             imageEditorModal.classList.add('hidden');
         });
 
