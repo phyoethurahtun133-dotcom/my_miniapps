@@ -1734,6 +1734,71 @@ function exportCurrentDeckToFlashcards() {
             renderSandboxLights(); renderActiveLightsList();
         }
 
+        function startLightDrag(e, lightId) {
+            if (creatorActiveColor === 'eraser') return; 
+            e.stopPropagation(); 
+            
+            isDraggingLight = true;
+            draggedLightIndex = customLights.findIndex(l => l.id === lightId);
+            
+            const lightEl = e.currentTarget;
+            
+            // 1. ADD THE DRAGGING CLASS: This instantly disables the 0.3s CSS transition
+            lightEl.classList.add('dragging');
+            
+            lightEl.setPointerCapture(e.pointerId);
+            
+            // 2. PERFORMANCE FIX: Calculate the canvas size once when you click, not every time you move
+            const sandbox = document.getElementById('sandbox-card');
+            const rect = sandbox.getBoundingClientRect();
+            
+            lightEl.onpointermove = (ev) => {
+                if (!isDraggingLight || draggedLightIndex === -1) return;
+                
+                let x = Math.round(ev.clientX - rect.left);
+                let y = Math.round(ev.clientY - rect.top);
+                
+                if (toolSettings.snap) {
+                    const innerW = rect.width - 12; 
+                    const innerH = rect.height - 12; 
+                    const stepX = innerW / 8; 
+                    const stepY = innerH / 12;
+                    let relX = x - 6; 
+                    let relY = y - 6;
+                    let snappedX = Math.round(relX / stepX) * stepX + 6;
+                    let snappedY = Math.round(relY / stepY) * stepY + 6;
+                    if (Math.abs(x - snappedX) < 15 && Math.abs(y - snappedY) < 15) { 
+                        x = snappedX; y = snappedY; 
+                    }
+                }
+                
+                x = Math.max(0, Math.min(x, rect.width));
+                y = Math.max(0, Math.min(y, rect.height));
+
+                lightEl.style.left = `${x}px`;
+                lightEl.style.top = `${y}px`;
+                
+                customLights[draggedLightIndex].x = x;
+                customLights[draggedLightIndex].y = y;
+            };
+            
+            lightEl.onpointerup = (ev) => {
+                isDraggingLight = false;
+                draggedLightIndex = null;
+                
+                // 3. REMOVE THE DRAGGING CLASS: Turns the smooth transitions back on
+                lightEl.classList.remove('dragging');
+                
+                lightEl.releasePointerCapture(ev.pointerId);
+                
+                lightEl.onpointermove = null;
+                lightEl.onpointerup = null;
+                
+                renderActiveLightsList();
+                updateCSVCodeOutput();
+            };
+        }
+
         function insertTemplateStack(type) {
             customLights = [];
             document.getElementById('sandbox-hint').classList.add('hidden');
