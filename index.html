@@ -397,12 +397,29 @@
         .hub-active { background-color: #f3f4f6; font-family: sans-serif; }
         .hidden-app { display: none !important; }
         .back-to-hub-btn { 
-            position: absolute; top: 10px; right: 10px; z-index: 9999;
-            background: #ef4444; color: white; border: none; padding: 8px 12px;
-            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: absolute; 
+            top: 12px; 
+            right: 16px; 
+            z-index: 9999;
+            background: #ef4444; 
+            color: white !important; 
+            border: none !important; 
+            padding: 8px 14px !important; /* Added !important here */
+            border-radius: 8px; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            font-weight: 700 !important; 
+            font-size: 14px !important;
+            line-height: 1.2 !important;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-sizing: border-box !important;
         }
-        .back-to-hub-btn:hover { background: #dc2626; }
+        .back-to-hub-btn:hover { 
+            background: #dc2626; 
+        }
     </style>
 </head>
 <body class="hub-active">
@@ -830,7 +847,7 @@
     <div id="app-flashcard" class="hidden-app bg-gray-50 min-h-screen text-gray-800 font-sans transition-colors duration-200 relative">
         <button onclick="goHome()" class="back-to-hub-btn">🏠 Hub</button>
 
-        <header class="bg-indigo-600 text-white shadow-md p-4 mb-8">
+        <header class="bg-indigo-600 text-white shadow-md py-3 px-4 mb-8">
             <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 pr-24">
                 <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
                     🗂️ Local Flashcard Studio Pro
