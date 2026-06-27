@@ -289,6 +289,36 @@
         #app-ror .shape-cone-up { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 24px solid #0f172a; background: none; }
         #app-ror .shape-cone-down { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 24px solid #0f172a; background: none; }
         #app-ror .shape-cylinder { width: 16px; height: 28px; background-color: #0f172a; border-radius: 2px; box-shadow: inset -3px 0 6px rgba(0,0,0,0.4); }
+            /* ================= COLLAPSIBLE PANELS ================= */
+        /* Hide all children of a collapsed panel EXCEPT the title bars */
+        #app-ror .creator-panel.collapsed > *:not(.creator-title-bar):not(.panel-heading) {
+            display: none !important;
+        }
+
+        /* Make the headers look clickable */
+        #app-ror .creator-panel .creator-title-bar,
+        #app-ror .creator-panel > .panel-heading {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Add a dropdown arrow icon to the headings */
+        #app-ror .creator-panel .panel-heading::after {
+            content: '▼';
+            margin-left: auto; /* Pushes the arrow to the right if there's space */
+            padding-left: 10px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+
+        /* Rotate the arrow when collapsed */
+        #app-ror .creator-panel.collapsed .panel-heading::after {
+            transform: rotate(-90deg);
+        }
+    
+    
+    
     </style>
 
     <style>
@@ -342,24 +372,24 @@
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
         /* Share ROR styles with the Flashcard App */
-#app-flashcard .light-bulb { position: absolute; width: 18px; height: 18px; border-radius: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; }
-#app-flashcard .light-bulb::after { content: ''; width: 6px; height: 6px; background-color: white; border-radius: 50%; }
-#app-flashcard .light-red { background-color: #ef4444; box-shadow: 0 0 24px 10px rgba(239, 68, 68, 0.85); }
-#app-flashcard .light-green { background-color: #10b981; box-shadow: 0 0 24px 10px rgba(16, 185, 129, 0.85); }
-#app-flashcard .light-white { background-color: #f1f5f9; box-shadow: 0 0 24px 10px rgba(241, 245, 249, 0.85); }
-#app-flashcard .light-yellow { background-color: #eab308; box-shadow: 0 0 24px 10px rgba(234, 179, 8, 0.85); }
-#app-flashcard .light-flash-red { background-color: #ef4444; box-shadow: 0 0 24px 10px rgba(239, 68, 68, 0.85); animation: flashAnimation 1.2s infinite; }
-#app-flashcard .light-flash-yellow { background-color: #eab308; box-shadow: 0 0 24px 10px rgba(234, 179, 8, 0.85); animation: flashAnimation 1.2s infinite; }
+        #app-flashcard .light-bulb { position: absolute; width: 18px; height: 18px; border-radius: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; }
+        #app-flashcard .light-bulb::after { content: ''; width: 6px; height: 6px; background-color: white; border-radius: 50%; }
+        #app-flashcard .light-red { background-color: #ef4444; box-shadow: 0 0 24px 10px rgba(239, 68, 68, 0.85); }
+        #app-flashcard .light-green { background-color: #10b981; box-shadow: 0 0 24px 10px rgba(16, 185, 129, 0.85); }
+        #app-flashcard .light-white { background-color: #f1f5f9; box-shadow: 0 0 24px 10px rgba(241, 245, 249, 0.85); }
+        #app-flashcard .light-yellow { background-color: #eab308; box-shadow: 0 0 24px 10px rgba(234, 179, 8, 0.85); }
+        #app-flashcard .light-flash-red { background-color: #ef4444; box-shadow: 0 0 24px 10px rgba(239, 68, 68, 0.85); animation: flashAnimation 1.2s infinite; }
+        #app-flashcard .light-flash-yellow { background-color: #eab308; box-shadow: 0 0 24px 10px rgba(234, 179, 8, 0.85); animation: flashAnimation 1.2s infinite; }
 
-#app-flashcard .day-shape { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; }
-#app-flashcard .shape-ball { width: 22px; height: 22px; background-color: #0f172a; border-radius: 50%; box-shadow: inset -3px -3px 6px rgba(0,0,0,0.4); }
-#app-flashcard .shape-diamond { width: 20px; height: 20px; background-color: #0f172a; transform: translate(-50%, -50%) rotate(45deg); box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4); }
-#app-flashcard .shape-cone-up { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 24px solid #0f172a; background: none; }
-#app-flashcard .shape-cone-down { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 24px solid #0f172a; background: none; }
-#app-flashcard .shape-cylinder { width: 16px; height: 28px; background-color: #0f172a; border-radius: 2px; box-shadow: inset -3px 0 6px rgba(0,0,0,0.4); }
-    </style>
+        #app-flashcard .day-shape { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; }
+        #app-flashcard .shape-ball { width: 22px; height: 22px; background-color: #0f172a; border-radius: 50%; box-shadow: inset -3px -3px 6px rgba(0,0,0,0.4); }
+        #app-flashcard .shape-diamond { width: 20px; height: 20px; background-color: #0f172a; transform: translate(-50%, -50%) rotate(45deg); box-shadow: inset -2px -2px 4px rgba(0,0,0,0.4); }
+        #app-flashcard .shape-cone-up { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 24px solid #0f172a; background: none; }
+        #app-flashcard .shape-cone-down { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 24px solid #0f172a; background: none; }
+        #app-flashcard .shape-cylinder { width: 16px; height: 28px; background-color: #0f172a; border-radius: 2px; box-shadow: inset -3px 0 6px rgba(0,0,0,0.4); }
+        </style>
 
-    <style>
+        <style>
         /* General styling for the body to support the Hub layout initially */
         body { margin: 0; padding: 0; transition: background-color 0.3s; }
         .hub-active { background-color: #f3f4f6; font-family: sans-serif; }
@@ -638,7 +668,7 @@
                             </div>
                         </div>
 
-                        <div class="creator-panel">
+                        <div class="creator-panel collapsed">
                             <h3 class="panel-heading" style="font-size: 0.85rem;">
                                 Live 360° Sector Aspect Visualizer
                             </h3>
@@ -655,7 +685,7 @@
                             </div>
                         </div>
 
-                        <div class="creator-panel">
+                        <div class="creator-panel collapsed">
                             <h3 class="panel-heading" style="font-size: 0.85rem;">Sound Signal Player (Rules 34 & 35)</h3>
                             <div class="whistle-console">
                                 <div class="whistle-grid">
@@ -2439,6 +2469,9 @@ function importCSV(event) {
 
             // Extract the filename without the .csv extension to use as the deck name
             let defaultDeckName = file.name.replace(/\.[^/.]+$/, "");
+            if (!defaultDeckName.startsWith("⚓ ROR:")) {
+                defaultDeckName = "⚓ ROR: " + defaultDeckName;
+            }
             
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -2529,6 +2562,11 @@ function importCSV(event) {
                     if (cardsToImport.length === 0) { alert("No compatible cards found inside this JSON payload."); return; }
                     if (data.deck && data.deck.name) {
 
+                    // Add the anchor prefix here
+                    if (!data.deck.name.startsWith("⚓ ROR:")) {
+                        data.deck.name = "⚓ ROR: " + data.deck.name;
+                    }
+
             const createNewDeck = confirm(
                 `Create a new deck called "${data.deck.name}"?\n\nOK = New Deck\nCancel = Import into current deck`
             );
@@ -2580,9 +2618,10 @@ function importCSV(event) {
                     };
                     reader.readAsText(file);
                 }
-            </script>
+    </script>
 
-            <script>
+
+    <script>
                 let vault = {
                     activeDeckId: "default",
                     decks: {
@@ -3078,6 +3117,10 @@ function buildRORLightsHtml(lights) {
                             }
 
                             if(cardsToImport.length > 0) {
+                                // Ensure the anchor prefix is added
+                                if (!defaultName.startsWith("⚓ ROR:")) {
+                                    defaultName = "⚓ ROR: " + defaultName;
+                                }
                                 const name = prompt("Name your newly imported deck profile:", defaultName);
                                 if(!name) return;
                                 
@@ -3231,6 +3274,10 @@ function buildRORLightsHtml(lights) {
                         
                         // Prep dynamic default name
                         let defaultName = file.name.replace(/\.[^/.]+$/, "");
+                        // Ensure the anchor prefix is added
+                        if (!defaultName.startsWith("⚓ ROR:")) {
+                            defaultName = "⚓ ROR: " + defaultName;
+                        }
                         
                         const proposedDeckName = prompt(`Successfully parsed ${importedCards.length} spreadsheet cards! Assign a name to this deck portfolio:`, defaultName);
                         if (!proposedDeckName || !proposedDeckName.trim()) return;
@@ -3413,7 +3460,35 @@ function startMixedDeckPractice() {
     // Feed the scrambled cards directly into your existing quiz engine
     startQuizSession(practiceDeck);
 }
-
     </script>
+
+    <script>
+        // Initialize Collapsible Panels for the ROR Creator
+        document.addEventListener('DOMContentLoaded', () => {
+            // Find all the panels inside the creator section
+            const panels = document.querySelectorAll('#section-creator .creator-panel');
+            
+            panels.forEach(panel => {
+                // Find the clickable header area (some use a wrapper, some use the heading directly)
+                const header = panel.querySelector('.creator-title-bar') || panel.querySelector('.panel-heading');
+                
+                if (header) {
+                    header.title = 'Click to collapse/expand panel';
+                    
+                    header.addEventListener('click', (e) => {
+                        // SAFEGUARD: Do not collapse if the user is clicking a button (e.g., 'Clear Card')
+                        if (e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) {
+                            return;
+                        }
+                        
+                        // Toggle the collapsed class on the main panel
+                        panel.classList.toggle('collapsed');
+                    });
+                }
+            });
+        });
+    </script>
+
+
 </body>
 </html>
