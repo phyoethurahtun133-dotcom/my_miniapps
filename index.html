@@ -141,6 +141,8 @@
         @media (min-width: 640px) { #app-ror .cards-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (min-width: 1024px) { #app-ror .cards-grid { grid-template-columns: repeat(3, 1fr); } }
 
+        #app-ror .card-inner.flipped .card-front { pointer-events: none; }
+
         #app-ror .card-perspective { perspective: 1000px; width: 100%; height: 440px; max-width: 310px; }
         #app-ror .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; cursor: pointer; }
         #app-ror .card-inner.flipped { transform: rotateY(180deg); }
@@ -572,7 +574,7 @@
 
                 <div class="info-banner">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <span>Tap any card to flip. Tap the orange rule numbers for full COLREG text. Any custom cards you design will automatically show up inside <strong>Selected Deck</strong>.</span>
+                    <span>Tap any card to flip.<strong>Selected Deck</strong>.</span>
                 </div>
 
                 <div id="study-cards-grid" class="cards-grid"></div>
@@ -1679,7 +1681,10 @@ function exportCurrentDeckToFlashcards() {
                             </div>
                             <div class="back-footer-info">
                                 <span>Verify details</span>
-                                <span style="display: flex; align-items: center; gap: 4px;"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>Tap to Front</span>
+                                <span style="display: flex; align-items: center; gap: 4px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                                    </svg>Tap to Front</span>
                             </div>
                         </div>
                     </div>
