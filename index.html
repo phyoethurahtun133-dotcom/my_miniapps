@@ -993,16 +993,18 @@
                         </div>
                     </div>
 
-                    <div class="perspective-1000 w-full h-96 group">
+                    <div class="perspective-1000 w-full h-[450px] group mx-auto">
                         <div id="flashcard" class="w-full h-full relative transform-style-3d transition-transform duration-500 cursor-pointer select-none rounded-2xl shadow-md border border-gray-200/60">
                             <div class="absolute inset-0 backface-hidden bg-white rounded-2xl p-3 flex flex-col justify-between items-start text-left">
                                 <div class="w-full flex justify-between items-center mb-2">
                                     <span class="text-xs font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-md">Front (Question)</span>
                                     <button id="tts-front" class="bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-gray-200 text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1">🔊 Speak</button>
                                 </div>
-                                <div class="flex-1 w-full flex flex-col items-center gap-4 my-1 overflow-y-auto card-scrollbar pr-2"> 
-                                    <img id="view-front-img" src="" class="hidden max-h-64 w-auto flex-shrink-0 object-contain rounded-xl drop-shadow-md" alt="Front Illustration">
-                                    <div id="view-front-text" class="markdown-body w-full text-base sm:text-lg font-semibold text-gray-800 text-left"></div>                                   
+                                <div class="flex-1 w-full flex flex-col justify-center items-center gap-3 my-1 relative overflow-y-auto card-scrollbar pr-2">
+                                    <div id="view-front-ror-canvas" class="hidden relative bg-[#020203] rounded-xl border-4 border-[#f59e0b] mx-auto shadow-inner overflow-hidden flex-shrink-0" style="width: 200px; height: 260px;"></div>                                    
+                                    
+                                    <img id="view-front-img" src="" class="hidden max-h-64 w-auto flex-shrink-0 object-contain rounded-lg max-w-full" alt="Front Illustration">
+                                    <div id="view-front-text" class="markdown-body w-full text-base sm:text-lg font-semibold text-gray-800 text-left"></div>
                                 </div>
                                 <span class="text-xs text-gray-400 italic self-center mt-2">💡 Click card to flip</span>
                             </div>
@@ -1012,7 +1014,7 @@
                                     <span class="text-xs font-bold uppercase tracking-widest text-indigo-300 bg-indigo-950/50 px-2.5 py-1 rounded-md">Back (Answer)</span>
                                     <button id="tts-back" class="bg-indigo-950/50 hover:bg-indigo-950 text-indigo-200 text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1">🔊 Speak</button>
                                 </div>
-                                <div class="flex-1 w-full flex flex-col items-center gap-4 my-1 overflow-y-auto card-scrollbar pr-2">                                   
+                                <div class="flex-1 w-full flex flex-col justify-center items-center gap-4 my-1 overflow-y-auto card-scrollbar pr-2">                                   
                                     <img id="view-back-img" src="" class="hidden max-h-64 w-auto flex-shrink-0 object-contain rounded-xl drop-shadow-md" alt="Back Illustration">                                  
                                     <div id="view-back-text" class="markdown-body w-full text-base sm:text-lg font-medium text-indigo-100 text-left"></div>                                    
                                 </div>
@@ -3078,10 +3080,51 @@ function buildRORLightsHtml(lights) {
             const currentCard = quizDeck[currentIndex];
             const rorLightsArray = currentCard.rawRorData ? currentCard.rawRorData.lights : currentCard.rorLights;
 
+            const rorCanvasFront = document.getElementById('view-front-ror-canvas');
+            const frontTextEl = document.getElementById('view-front-text');
+
             if (rorLightsArray && rorLightsArray.length > 0) {
-                document.getElementById('view-front-text').innerHTML = buildRORLightsHtml(rorLightsArray);
+                // Hide text, show canvas
+                frontTextEl.classList.add('hidden');
+                rorCanvasFront.classList.remove('hidden');
+                
+                let lightsMarkup = `<div style="position: relative; width: 290px; height: 380px; transform: scale(0.65); transform-origin: center; margin: 0 auto; flex-shrink: 0;">`;
+                
+                const isDay = rorLightsArray.some(l => l.color.startsWith('shape-'));
+                
+                // Style background for Day vs Night
+                if (isDay) {
+                    rorCanvasFront.style.background = 'linear-gradient(to bottom, #7dd3fc 0%, #e0f2fe 100%)';
+                    rorCanvasFront.style.borderColor = '#334155';
+                } else {
+                    rorCanvasFront.style.background = '#020203';
+                    rorCanvasFront.style.borderColor = '#f59e0b';
+                }
+
+                // Inject lights
+                rorLightsArray.forEach(light => {
+                    if (light.color.startsWith('shape-')) {
+                        lightsMarkup += `<div class="day-shape ${light.color}" style="left: ${light.x}px; top: ${light.y}px;"></div>`;
+                    } else {
+                        const cCls = { red: 'light-red', green: 'light-green', white: 'light-white', yellow: 'light-yellow', 'flash-red': 'light-flash-red', 'flash-yellow': 'light-flash-yellow' }[light.color] || 'light-white';
+                        lightsMarkup += `<div class="light-bulb ${cCls}" style="left: ${light.x}px; top: ${light.y}px;"></div>`;
+                    }
+                });
+
+                lightsMarkup += `</div>`;
+                
+                rorCanvasFront.style.display = 'flex';
+                rorCanvasFront.style.alignItems = 'center';
+                rorCanvasFront.style.justifyContent = 'center';
+                rorCanvasFront.innerHTML = lightsMarkup;
+                
             } else {
-                document.getElementById('view-front-text').innerHTML = DOMPurify.sanitize(marked.parse(currentCard.frontText || ""));
+                // Standard text rendering
+                frontTextEl.classList.remove('hidden');
+                rorCanvasFront.classList.add('hidden');
+                rorCanvasFront.style.display = ''; 
+                rorCanvasFront.innerHTML = '';
+                frontTextEl.innerHTML = DOMPurify.sanitize(marked.parse(currentCard.frontText || ""));
             }
 
             document.getElementById('view-back-text').innerHTML = DOMPurify.sanitize(marked.parse(currentCard.backText || ""));
