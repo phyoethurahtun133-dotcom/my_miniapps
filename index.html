@@ -15,6 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="https://js.puter.com/v2/"></script>
     <script src="shared-data.js"></script>
 
     <script>
@@ -23,21 +24,6 @@
                 name: 'UnifiedLearningHub_SharedDB',
                 storeName: 'shared_hub_data'
             });
-
-            let customPronunciations = {};
-
-                fetch('pronunciations.json')
-                    .then(response => {
-                        if (!response.ok) throw new Error("Dictionary file not found");
-                        return response.json();
-                    })
-                    .then(data => {
-                        customPronunciations = data;
-                        console.log("Pronunciation dictionary loaded successfully!", customPronunciations);
-                    })
-                    .catch(error => {
-                        console.warn("Could not load custom pronunciations, falling back to default speech:", error);
-                    });
 
             // ===== STORAGE KEYS =====
             const FLASHCARD_VAULT_KEY = 'shared_flashcard_vault';
@@ -406,7 +392,6 @@
         #app-flashcard .shape-cone-up { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 24px solid #0f172a; background: none; }
         #app-flashcard .shape-cone-down { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 24px solid #0f172a; background: none; }
         #app-flashcard .shape-cylinder { width: 16px; height: 28px; background-color: #0f172a; border-radius: 2px; box-shadow: inset -3px 0 6px rgba(0,0,0,0.4); }
-        #voice-selector { text-overflow: ellipsis; white-space: nowrap; overflow: hidden;}
         </style>
 
         <style>
@@ -1012,11 +997,8 @@
                     <div class="perspective-1000 w-full h-[450px] group mx-auto">
                         <div id="flashcard" class="w-full h-full relative transform-style-3d transition-transform duration-500 cursor-pointer select-none rounded-2xl shadow-md border border-gray-200/60">
                             <div class="absolute inset-0 backface-hidden bg-white rounded-2xl p-3 flex flex-col justify-between items-start text-left">
-                                
                                 <div class="w-full flex justify-between items-center mb-2 shrink-0">
                                     <span class="text-xs font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-md">Front (Question)</span>
-                                    <label for="voice-selector" class="text-xs font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-md">Choose Voice:</label>
-                                    <select id="voice-selector" class="w-48 max-w-full p-2 border border-gray-300 rounded" onclick="event.stopPropagation()"></select>                                    
                                     <button id="tts-front" class="bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-gray-200 text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1">🔊 Speak</button>
                                 </div>
                                 <div class="flex-1 min-h-0 w-full flex flex-col justify-start items-center gap-3 my-1 relative overflow-y-auto card-scrollbar pr-2">
@@ -1030,7 +1012,7 @@
 
                             <div class="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-900 rounded-2xl p-3 flex flex-col justify-between items-start text-left text-white">
                                 <div class="w-full flex justify-between items-center mb-2 shrink-0">
-                                    <span class="text-xs font-bold uppercase tracking-widest text-indigo-300 bg-indigo-950/50 px-2.5 py-1 rounded-md">Back (Answer)</span>                                    
+                                    <span class="text-xs font-bold uppercase tracking-widest text-indigo-300 bg-indigo-950/50 px-2.5 py-1 rounded-md">Back (Answer)</span>
                                     <button id="tts-back" class="bg-indigo-950/50 hover:bg-indigo-950 text-indigo-200 text-xs font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1">🔊 Speak</button>
                                 </div>
                                 <div class="flex-1 min-h-0 w-full flex flex-col justify-start items-center gap-4 my-1 overflow-y-auto card-scrollbar pr-2">                                   
@@ -2837,8 +2819,8 @@ function importCSV(event) {
         document.getElementById('delete-card-btn').addEventListener('click', deleteCurrentCard2);
         document.getElementById('cancel-edit-btn').addEventListener('click', closeAndResetFormState);
 
-        document.getElementById('tts-front').addEventListener('click', (e) => { e.stopPropagation(); speakText(quizDeck[currentIndex]?.frontText); });
-        document.getElementById('tts-back').addEventListener('click', (e) => { e.stopPropagation(); speakText(quizDeck[currentIndex]?.backText); });
+        document.getElementById('tts-front').addEventListener('click', (e) => { e.stopPropagation(); speakText(vault.decks[vault.activeDeckId].cards[currentIndex]?.frontText); });
+        document.getElementById('tts-back').addEventListener('click', (e) => { e.stopPropagation(); speakText(vault.decks[vault.activeDeckId].cards[currentIndex]?.backText); });
 
         document.getElementById('front-image').addEventListener('change', (e) => launchCropperWithFile(e, 'front'));
         document.getElementById('back-image').addEventListener('change', (e) => launchCropperWithFile(e, 'back'));
@@ -2946,79 +2928,40 @@ function getStorageUsageMB() {
         }
 
         function startQuizSession(cardSourceArray) {
-            quizDeck = [...cardSourceArray]; 
-            currentIndex = 0; correctCount = 0; wrongCount = 0; 
-            answeredCards.clear(); missedCardObjects = [];
-            celebrationScreen.classList.add('hidden'); 
-            quizArea.classList.remove('hidden'); closeAndResetFormState(); 
-            resetCardFaceAnimation(); renderDeckState();
+            quizDeck = [...cardSourceArray]; currentIndex = 0; correctCount = 0; wrongCount = 0; answeredCards.clear(); missedCardObjects = [];
+            celebrationScreen.classList.add('hidden'); quizArea.classList.remove('hidden'); closeAndResetFormState(); resetCardFaceAnimation(); renderDeckState();
         }
 
         function shuffleCurrentQuizSession() {
             if (quizDeck.length <= 1) return;
-            for (let i = quizDeck.length - 1; i > 0; i--) { 
-                const j = Math.floor(Math.random() * (i + 1)); 
-                [quizDeck[i], quizDeck[j]] = [quizDeck[j], quizDeck[i]]; }
+            for (let i = quizDeck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [quizDeck[i], quizDeck[j]] = [quizDeck[j], quizDeck[i]]; }
             startQuizSession(quizDeck);
         }
 
-        const voiceSelector = document.getElementById('voice-selector');
-
-        // Function to populate the dropdown
-        function loadVoices() {
-            const voices = window.speechSynthesis.getVoices();
-            voiceSelector.innerHTML = ''; // Clear existing
-            
-            voices.forEach((voice) => {
-                const option = document.createElement('option');
-                option.textContent = `${voice.name} (${voice.lang})`;
-                option.setAttribute('data-name', voice.name);
-                voiceSelector.appendChild(option);
-            });
-        }
-
-        // Ensure voices are loaded (browsers load them asynchronously)
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
-        loadVoices();
-
+        let currentAudio = null;
 
         function speakText(rawText) {
             if (!rawText) return; 
-
-            window.speechSynthesis.cancel(); 
-
-            // 1. Clean layout layout and symbols first
-            let cleanText = rawText
-                // 1. Convert HTML line breaks (<br>, <br/>) to commas for natural pauses
-                .replace(/<br\s*[\/]?>/gi, ", ")
-                // 2. Convert raw keyboard Enter hits (\r, \n) to commas
-                .replace(/[\r\n]+/g, ", ")
-                // 3. Remove Markdown symbols (*, `, #, -, _, >) so they aren't spoken
-                .replace(/[\*\`\#\-\_\>]/g, "")
-                .replace(/\//g, ", ")
-                // 4. Wipe out extra whitespace or double-spaces caused by the replacement
-                .replace(/\s\s+/g, ' ');
-
-            // 2. Loop through your JSON dictionary and replace abbreviations
-            for (const [abbreviation, properPronunciation] of Object.entries(customPronunciations)) {
-                // '\b' ensures we match the exact whole word. 'gi' means case-insensitive global match.
-                const regex = new RegExp(`\\b${abbreviation}\\b`, 'gi');
-                cleanText = cleanText.replace(regex, properPronunciation);
+            
+            // Stop any currently playing audio
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
             }
 
-            // 3. Hand the completely transformed text over to Google Speech
-            const utterance = new SpeechSynthesisUtterance(cleanText.trim());
-            utterance.rate = 1.0; 
-            utterance.pitch = 1.0;
-
-            // Find the voice object based on the user's selection
-                const selectedVoiceName = voiceSelector.selectedOptions[0].getAttribute('data-name');
-                const allVoices = window.speechSynthesis.getVoices();
-                utterance.voice = allVoices.find(v => v.name === selectedVoiceName);
-
-            window.speechSynthesis.speak(utterance);
+            // Clean markdown, line breaks, and hidden "enter" symbols
+            const cleanText = rawText
+                .replace(/[\*\`\#\-\_\>]/g, "")
+                .replace(/<br>/g, " ")
+                .replace(/[\r\n]+/g, " ");
+            
+            // Call Puter AI and play the returned audio
+            puter.ai.txt2speech(cleanText)
+                .then((audio) => {
+                    currentAudio = audio;
+                    currentAudio.play();
+                })
+                .catch((error) => console.error("Puter TTS Error:", error));
         }
 
         function toggleCardFlip2() {
