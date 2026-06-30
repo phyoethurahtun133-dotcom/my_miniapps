@@ -2967,7 +2967,11 @@ function getStorageUsageMB() {
         // Function to populate the dropdown
         function loadVoices() {
             const voices = window.speechSynthesis.getVoices();
-            voiceSelector.innerHTML = ''; // Clear existing
+
+            // If the browser hasn't prepared any voices yet, don't clear or break things
+            if (!voices || voices.length === 0) return;
+
+            voiceSelector.innerHTML = ''; // Clear existing placeholder/stale options
             
             voices.forEach((voice) => {
                 const option = document.createElement('option');
@@ -2977,11 +2981,28 @@ function getStorageUsageMB() {
             });
         }
 
-        // Ensure voices are loaded (browsers load them asynchronously)
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
-        loadVoices();
+        // 1. Try standard event listener for voice readiness
+            if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+            
+            // 2. Mobile Robustness: Run checks multiple times on startup
+            window.addEventListener('DOMContentLoaded', () => {
+                loadVoices();
+                // Check every 500ms for up to 5 seconds to catch delayed mobile assets
+                let mobileVoiceCheck = setInterval(() => {
+                    const voices = window.speechSynthesis.getVoices();
+                    if (voices.length > 0) {
+                        loadVoices();
+                        clearInterval(mobileVoiceCheck);
+                    }
+                }, 500);
+                setTimeout(() => clearInterval(mobileVoiceCheck), 5000);
+            });
+
+            // 3. Hard Fallback: Try loading them again the exact split-second the user taps the selector
+            voiceSelector.addEventListener('click', loadVoices);
+            voiceSelector.addEventListener('touchstart', loadVoices);
 
 
         function speakText(rawText) {
@@ -3015,9 +3036,12 @@ function getStorageUsageMB() {
             utterance.rate = 0.9; 
             utterance.pitch = 1.0;
 
-            // Find the voice object based on the user's selection
-                const selectedVoiceName = voiceSelector.selectedOptions[0].getAttribute('data-name');
+            // CRASH FIX: Safely extract the selection using optional chaining (?.)
+                const selectedOption = voiceSelector.selectedOptions ? voiceSelector.selectedOptions[0] : null;
+                const selectedVoiceName = selectedOption ? selectedOption.getAttribute('data-name') : null;
                 const allVoices = window.speechSynthesis.getVoices();
+
+
                 if (selectedVoiceName) {                
                 utterance.voice = allVoices.find(v => v.name === selectedVoiceName);
                 }
