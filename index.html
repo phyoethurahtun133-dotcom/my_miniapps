@@ -3035,6 +3035,29 @@ function getStorageUsageMB() {
             voiceSelector.addEventListener('click', loadVoicesOnDemand);
             voiceSelector.addEventListener('touchstart', loadVoicesOnDemand, { passive: true });
 
+            // Global flag to track if mobile speech engine is unlocked
+            let speechUnlocked = false;
+
+            function unlockMobileSpeech() {
+                if (speechUnlocked || typeof speechSynthesis === 'undefined') return;
+
+                // Speak a completely silent, empty utterance to trick the mobile engine
+                const silentUtterance = new SpeechSynthesisUtterance(' ');
+                silentUtterance.volume = 0;
+                window.speechSynthesis.speak(silentUtterance);
+                
+                speechUnlocked = true;
+
+                // Clean up event listeners once unlocked
+                document.removeEventListener('touchstart', unlockMobileSpeech);
+                document.removeEventListener('click', unlockMobileSpeech);
+            }
+
+            // Attach the unlocker to the very first touch/click anywhere on the page
+            document.addEventListener('touchstart', unlockMobileSpeech, { passive: true });
+            document.addEventListener('click', unlockMobileSpeech);
+
+
             function speakText(rawText) {
                 if (!rawText || typeof speechSynthesis === 'undefined') return; 
 
